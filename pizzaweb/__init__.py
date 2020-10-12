@@ -5,7 +5,7 @@ import random
 from flask import render_template, request, redirect, Flask, make_response, send_file
 url = "http://localhost/?code="
 app = Flask(__name__)
-mongoclient = pymongo.MongoClient("mongodb://admin:!Home4514@localhost:27017/?authSource=admin&ssl=false")
+mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
 db = mongoclient["Pizza"]['Pizzas']
 codedb = mongoclient["Pizza"]["Codes"]
 
@@ -122,7 +122,3 @@ def grayscale():
 @app.route('/assets/img/intro-bg.jpg')
 def bg():
     return send_file('./assets/intro-bg.jpg')
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port='80')
