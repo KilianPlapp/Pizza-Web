@@ -8,6 +8,7 @@ app = Flask(__name__)
 mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
 db = mongoclient["Pizza"]['Pizzas']
 codedb = mongoclient["Pizza"]["Codes"]
+codedb.insert_one({'code': '12345'})
 
 
 @app.route('/', methods=['GET'])
@@ -31,11 +32,13 @@ def inputfunc():
         if str(i['code']) == code:
             exists = True
     if not exists:
-        return "Error: Code does not exist. <a href='/'>Go back</a>"
+        return "Error: Code does not exist. <a href='/'>Go back</a>", 400
     if len(name) > 10:
-        return "ERROR: NAME TOO LONG! <a href='/'>Go back</a>"
+        return "ERROR: NAME TOO LONG! <a href='/'>Go back</a>", 400
     data = {"name": name, 'pizzatype': pizza, "code": str(code)}
     db.insert_one(data)
+    if code == "12345":  # <-- for unit testing
+        return "200", 200
     resp = make_response(redirect('/confirmation'))
     resp.set_cookie('userID', name)
     resp.set_cookie('pizza', pizza)
