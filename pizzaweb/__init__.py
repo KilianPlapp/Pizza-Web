@@ -51,7 +51,7 @@ def newcode():
     code = random.randint(10000, 99999)
     for i in codedb.find():
         if code == i['code']:
-            code = random.randint(10000, 99999)
+            code = "Error, please reload the page."
     codedb.insert_one({'code': str(code)})
     return render_template('newcode.html', url=url, code=code)
 
