@@ -32,13 +32,11 @@ def inputfunc():
         if str(i['code']) == code:
             exists = True
     if not exists:
-        return "Error: Code does not exist. <a href='/'>Go back</a>", 400
+        return render_template('index.html', code='', message='Code does not exist!'), 400
     if len(name) > 10:
-        return "ERROR: NAME TOO LONG! <a href='/'>Go back</a>", 400
+        return render_template('index.html', code='', message='Name too long, max 10 characters.'), 400
     data = {"name": name, 'pizzatype': pizza, "code": str(code)}
     db.insert_one(data)
-    if code == "12345":  # <-- for unit testing
-        return "200", 200
     resp = make_response(redirect('/confirmation'))
     resp.set_cookie('userID', name)
     resp.set_cookie('pizza', pizza)
@@ -109,7 +107,7 @@ def showfulllist():
             writer.writerow({'Name': i['name'], 'Pizza': i['pizzatype']})
         for i in p:
             writer.writerow({'Name': i['name'], 'Pizza': i['pizzatype']})
-    return send_file('names.csv', as_attachment=True)
+    return send_file('../names.csv', as_attachment=True)
 
 
 @app.route('/assets/bootstrap/css/bootstrap.min.css')
