@@ -50,6 +50,7 @@ def newcode():
     for i in codedb.find():
         if code == i['code']:
             code = "Error, please reload the page."
+            return render_template('newcode.html', url="", code=code)
     codedb.insert_one({'code': str(code)})
     return render_template('newcode.html', url=url, code=code)
 
