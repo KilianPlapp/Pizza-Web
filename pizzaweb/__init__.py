@@ -3,19 +3,20 @@ import csv
 import os
 import random
 from flask import render_template, request, redirect, Flask, make_response, send_file
+
 url = "http://localhost/?code="
 app = Flask(__name__)
 mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
 db = mongoclient["Pizza"]['Pizzas']
 codedb = mongoclient["Pizza"]["Codes"]
-codedb.insert_one({'code': '12345'})
+codedb.insert_one({'code': '12345'})  # <-- for unit testing
 
 
 @app.route('/', methods=['GET'])
 def mainpage():
-    try:
+    if 'code' in request.args:
         code = request.args['code']
-    except:
+    else:
         code = None
     if code is not None:
         return render_template('index.html', code=code, disabled='readonly="readonly"')
@@ -73,25 +74,22 @@ def confirmationpage():
 
 @app.route('/admin')
 def adminpage():
-    try:
+    if 'code' in request.args:
         code = request.args['code']
-    except:
-        return render_template('admin.html', pep="", met="", mar="")
-    mar, met, pep = 0, 0, 0
-    m, p, me = db.find({'pizzatype': 'Margherita', 'code': code}), db.find({'pizzatype': 'Pepperoni', 'code': code}), db.find(
-        {'pizzatype': 'Meteor', 'code': code})
-    for _ in m:
-        mar = mar + 1
-    for _ in p:
-        pep = pep + 1
-    for _ in me:
-        met = met + 1
-    return render_template('admin.html', pep=pep, met=met, mar=mar, code=code)
+    else:
+        return render_template('admin.html', pizzas='Enter code above to view and download lists.')
+    x = 0
+    for _ in db.find({'code': code}):
+        x = x + 1
+    return render_template('admin.html',
+                           pizzas=f"Total Pizzas: {x}",
+                           code='<a href="/admin/fulllist?code={{ code }}">Show Full List</a>')
 
 
 @app.route('/admin/fulllist')
 def showfulllist():
-    code = request.args['code']
+    if request.args['code'] == '':
+        return redirect('/admin')
     try:
         os.remove('names.csv')
     except FileNotFoundError:
@@ -100,13 +98,7 @@ def showfulllist():
         fieldnames = ['Name', 'Pizza']
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        m, p, me = db.find({'pizzatype': 'Margherita', 'code': code}), db.find({'pizzatype': 'Pepperoni', 'code': code}), db.find(
-            {'pizzatype': 'Meteor', 'code': code})
-        for i in m:
-            writer.writerow({'Name': i['name'], 'Pizza': i['pizzatype']})
-        for i in me:
-            writer.writerow({'Name': i['name'], 'Pizza': i['pizzatype']})
-        for i in p:
+        for i in db.find({'code': request.args['code']}):
             writer.writerow({'Name': i['name'], 'Pizza': i['pizzatype']})
     return send_file('../names.csv', as_attachment=True)
 
