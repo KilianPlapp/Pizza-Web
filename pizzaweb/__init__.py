@@ -12,8 +12,27 @@ codedb = mongoclient["Pizza"]["Codes"]
 codedb.insert_one({'code': '12345'})  # <-- for unit testing
 
 
-@app.route('/', methods=['GET'])
+@app.route('/', methods=['GET', 'POST'])
 def mainpage():
+    if request.method == 'POST':
+        name = request.form['fname']
+        pizza = request.form['dropdown']
+        code = str(request.form['code'])
+        exists = False
+        for i in codedb.find({}):
+            if str(i['code']) == code:
+                exists = True
+        if not exists:
+            return render_template('index.html', code='', message='Code does not exist!'), 400
+        if len(name) > 10:
+            return render_template('index.html', code='', message='Name too long, max 10 characters.'), 400
+        data = {"name": name, 'pizzatype': pizza, "code": str(code)}
+        db.insert_one(data)
+        resp = make_response(redirect('/confirmation'))
+        resp.set_cookie('userID', name)
+        resp.set_cookie('pizza', pizza)
+        resp.set_cookie('code', code)
+        return resp
     if 'code' in request.args:
         code = request.args['code']
     else:
@@ -21,28 +40,6 @@ def mainpage():
     if code is not None:
         return render_template('index.html', code=code, disabled='readonly="readonly"')
     return render_template('index.html', code=None, disabled="")
-
-
-@app.route('/input', methods=['GET'])
-def inputfunc():
-    name = request.args['fname']
-    pizza = request.args['dropdown']
-    code = str(request.args['code'])
-    exists = False
-    for i in codedb.find({}):
-        if str(i['code']) == code:
-            exists = True
-    if not exists:
-        return render_template('index.html', code='', message='Code does not exist!'), 400
-    if len(name) > 10:
-        return render_template('index.html', code='', message='Name too long, max 10 characters.'), 400
-    data = {"name": name, 'pizzatype': pizza, "code": str(code)}
-    db.insert_one(data)
-    resp = make_response(redirect('/confirmation'))
-    resp.set_cookie('userID', name)
-    resp.set_cookie('pizza', pizza)
-    resp.set_cookie('code', code)
-    return resp
 
 
 @app.route('/newcode')
@@ -57,7 +54,7 @@ def newcode():
 
 
 @app.after_request
-def add_header(r):
+def add_header(r):  # Prevent caching for development
     r.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     r.headers["Pragma"] = "no-cache"
     r.headers["Expires"] = "0"
