@@ -2,8 +2,11 @@ import pymongo
 import csv
 import os
 import random
+import colorama
 from flask import render_template, request, redirect, Flask, make_response, send_file
 
+
+colorama.init()
 url = "http://localhost/?code="
 app = Flask(__name__)
 mongoclient = pymongo.MongoClient("mongodb://localhost:27017/")
@@ -18,11 +21,7 @@ def mainpage():
         name = request.form['fname']
         pizza = request.form['dropdown']
         code = str(request.form['code'])
-        exists = False
-        for i in codedb.find({}):
-            if str(i['code']) == code:
-                exists = True
-        if not exists:
+        if codedb.find({'code': code}).count() == 0:
             return render_template('index.html', code='', message='Code does not exist!'), 400
         if len(name) > 10:
             return render_template('index.html', code='', message='Name too long, max 10 characters.'), 400
@@ -75,12 +74,13 @@ def adminpage():
         code = request.args['code']
     else:
         return render_template('admin.html', pizzas='Enter code above to view and download lists.')
-    x = 0
-    for _ in db.find({'code': code}):
-        x = x + 1
+    if db.find({'code': code}).count() == 0:
+        y = codedb.find({'code': code}).count()
+        if y == 0:
+            return render_template('admin.html', pizzas='Invalid code', code="")
     return render_template('admin.html',
-                           pizzas=f"Total Pizzas: {x}",
-                           code='<a href="/admin/fulllist?code={{ code }}">Show Full List</a>')
+                           pizzas=f"Total Pizzas: {db.find({'code': code}).count()}",
+                           code=code)
 
 
 @app.route('/admin/fulllist')
